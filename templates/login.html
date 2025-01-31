@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <h2 class="mt-5">Login</h2>
+    <form method="POST">
+      <div class="mb-3">
+        <label for="phone_number" class="form-label">Phone Number (+44...)</label>
+        <input type="text" name="phone_number" id="phone_number" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Login</button>
+      <a href="{{ url_for('auth_bp.register') }}" class="btn btn-link">No account? Register</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
