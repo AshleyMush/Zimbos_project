@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, abort
 from models import db, User, Group, GroupToken
 from . import dashboard_bp
 from flask_login import login_required, current_user
@@ -23,7 +23,7 @@ def dashboard():
 
     # If user hasn't accepted T&C, force them to accept T&C
     if not user.terms_accepted:
-        return redirect(url_for('terms'))
+        return redirect(url_for('auth_bp.terms'))
 
     search_query = request.args.get('search', '')
 

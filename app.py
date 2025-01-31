@@ -11,6 +11,8 @@ from flask_login import LoginManager, login_manager
 from controllers.auth import auth_bp
 from controllers.dashboard import dashboard_bp
 from controllers.website import website_bp
+from sqlalchemy.exc import SQLAlchemyError
+
 
 
 
@@ -19,9 +21,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'supersecretkey'  # Replace with something secure
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///whatsapp_mvp.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 csrf = CSRFProtect(app)
+
+# Initialize the database
 db.init_app(app)
 
 
@@ -45,11 +51,12 @@ app.register_blueprint(website_bp)
 
 
 
-# ---------------------- #
-#     HELPER FUNCTIONS   #
-# ---------------------- #
-
-
+# Automatically create the database tables if they don't exist
+with app.app_context():
+    try:
+        db.create_all()
+    except SQLAlchemyError as e:
+        db.session.rollback()
 
 
 
