@@ -1,0 +1,30 @@
+{% extends '/dashboard/base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+
+<h3>Add a New Group</h3>
+<form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.group_name.label }} 
+        {{ form.group_name(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.group_link.label }} 
+        {{ form.group_link(class="form-control") }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+<h3>Existing Groups</h3>
+<ul class="list-group">
+    {% for group in groups %}
+        <li class="list-group-item">
+            {{ group.group_name }} - <a href="{{ group.group_link }}" target="_blank">Visit Link</a>
+        </li>
+    {% else %}
+        <li class="list-group-item">No groups added yet.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends '/dashboard/base.html' %}
+{% block title %} User Dashboard{% endblock %}
+{% block content %}
+<h2>Welcome, {{ user.name }}</h2>
+
+<h3>Search Groups</h3>
+<form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.search_query.label }} 
+        {{ form.search_query(class="form-control") }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+{% if groups %}
+    <h4>Search Results:</h4>
+    <ul class="list-group">
+        {% for group in groups %}
+            <li class="list-group-item">
+                {{ group.group_name }} 
+                <!-- Clicking the button generates a token (max 3 per user) -->
+                <a href="{{ url_for('dashboard.generate_token_route', group_id=group.id) }}" class="btn btn-sm btn-success float-right">Get Token</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<h3>Your Tokens</h3>
+<ul class="list-group">
+    {% for token in tokens %}
+        <li class="list-group-item">
+            Token: {{ token.token }} - 
+            {% if token.used %}
+                Used
+            {% else %}
+                <a href="{{ url_for('dashboard.use_token', token=token.token) }}" class="btn btn-sm btn-warning">Use Token</a>
+            {% endif %}
+        </li>
+    {% else %}
+        <li class="list-group-item">No tokens generated yet.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

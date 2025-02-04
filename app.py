@@ -1,84 +1,63 @@
-from flask import Flask, render_template, request, redirect, url_for, session, abort, make_response
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
-import uuid
-from models import db
-from models import User, Group, GroupToken
-from flask_ckeditor import CKEditor
-from flask_wtf.csrf import CSRFProtect
+import os
+import logging
+from flask import Flask, render_template
 from flask_bootstrap import Bootstrap5
-from flask_login import LoginManager, login_manager
+from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+from sqlalchemy.exc import SQLAlchemyError
+from models import db
+from models.user import User
 from controllers.auth import auth_bp
 from controllers.dashboard import dashboard_bp
-from controllers.website import website_bp
-from sqlalchemy.exc import SQLAlchemyError
 
-
-
-
-
+# Initialize Flask application
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'supersecretkey'  # Replace with something secure
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///whatsapp_mvp.db'
+app.logger.setLevel(logging.INFO)
+
+# Define the base directory and ensure the instance folder exists
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+instance_path = os.path.join(BASEDIR, 'instance')
+if not os.path.exists(instance_path):
+    os.makedirs(instance_path)
+
+# Configure the application
+app.config['SECRET_KEY'] = os.environ.get("SECRET_APP_KEY", "default_secret_key")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    "DATABASE_URI", f"sqlite:///{os.path.join(instance_path, 'Zimbos.db')}"
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
-ckeditor = CKEditor(app)
 Bootstrap5(app)
 csrf = CSRFProtect(app)
-
-# Initialize the database
 db.init_app(app)
-
-
-
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth_bp.login'
+login_manager.login_view = 'auth.login'  # This should match your login route endpoint
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, user_id)
-
-
+    # Use db.session.get() or User.query.get() depending on your SQLAlchemy version
+    return db.session.get(User, int(user_id))
 
 # Register Blueprints
-app.register_blueprint(dashboard_bp)
 app.register_blueprint(auth_bp)
-app.register_blueprint(website_bp)
+app.register_blueprint(dashboard_bp)
 
-
-
-# Automatically create the database tables if they don't exist
+# Create database tables (if they do not already exist)
 with app.app_context():
     try:
         db.create_all()
     except SQLAlchemyError as e:
+        app.logger.error(f"Error creating tables: {e}")
         db.session.rollback()
 
-
-
-
-
-@app.route('/setup')
-def setup():
-    db.drop_all()
-    db.create_all()
-
-    # Add sample groups
-    sample_groups = [
-        Group(name="Zim Group 1", whatsapp_link="https://chat.whatsapp.com/invite_link_for_group_1"),
-        Group(name="Zim Group 2", whatsapp_link="https://chat.whatsapp.com/invite_link_for_group_2"),
-        Group(name="Zim Group 3", whatsapp_link="https://chat.whatsapp.com/invite_link_for_group_3"),
-        Group(name="Zim Group 4", whatsapp_link="https://chat.whatsapp.com/invite_link_for_group_4"),
-    ]
-    db.session.add_all(sample_groups)
-    db.session.commit()
-
-    return "Database setup complete!"
-
+# 404 Error Handler
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5002)

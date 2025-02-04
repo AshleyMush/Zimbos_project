@@ -9,4 +9,5 @@ dashboard_bp = Blueprint(
 
 )
 
-from . import groups, token
+from .user_routes import *
+from .admin_routes import *

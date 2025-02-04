@@ -1,84 +1,61 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
-from models import db, User
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from models import db
+from models.user import User
+from forms.auth_forms import RegistrationForm, LoginForm
 from . import auth_bp
-from flask_login import login_user, logout_user, login_required
-from datetime import datetime, timedelta
-from flask_login import current_user, login_user
-from forms import LoginForm, RegisterForm
 
 
-@auth_bp.route('/terms', methods=['GET', 'POST'])
-@login_required  # Ensure only authenticated users can access
-def terms():
-    """
-    Page displaying Terms & Conditions (T&C).
-    Users must agree to proceed if they haven't already.
-    """
-    if request.method == 'POST':
-        current_user.terms_accepted = True
-        db.session.commit()
-        return redirect(url_for('dashboard_bp.dashboard'))   # Ensure 'dashboard' is a registered route
-
-    return render_template('terms.html')
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """
-    Simple registration:
-    - Must accept T&C for GDPR compliance.
-    """
-    form = RegisterForm()
+    form = RegistrationForm()
+    user_count = User.query.count()
+
+
+    if user_count == 0:
+        role = 'Admin'
+
     if form.validate_on_submit():
-        phone = form.phone_number.data
-        terms_accepted = form.accept_terms.data
-
-        existing_user = User.query.filter_by(phone_number=phone).first()
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=form.email.data).first()
         if existing_user:
-            return redirect(url_for('auth.login'))  # Fix redirect to correct login
+            flash('User already exists, please login', 'warning')
+            return redirect(url_for('auth_bp.login'))
 
-        # Create new user
-        new_user = User(phone_number=phone, terms_accepted=terms_accepted)
+        new_user = User(
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            country=form.country.data,
+            role=role
+        )
         db.session.add(new_user)
         db.session.commit()
-
-        session['user_id'] = new_user.id
-        login_user(new_user)  # Auto-login after registration
-        return redirect(url_for('dashboard_bp.dashboard'))  # Ensure 'dashboard' is correct
-
-    return render_template('register.html', form=form)
+        flash('Registration successful, please login', 'success')
+        return redirect(url_for('auth_bp.login'))
+    return render_template('/auth/register.html', form=form)
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    User login route.
-    Redirects authenticated users to the dashboard.
-    """
     form = LoginForm()
-
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard_bp.dashboard'))
-
     if form.validate_on_submit():
-        phone = form.phone_number.data
-        user = User.query.filter_by(phone_number=phone).first()
-
-        if not user:
-            return render_template('login.html', form=form, error="User not found. Please register.")
-
-        login_user(user)  # Use Flask-Login to handle authentication
-        return redirect(url_for('dashboard_bp.dashboard'))
-
-    return render_template('login.html', form=form)
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            # Here you could add proper authentication (passwords, etc.)
+            session['user_id'] = user.id
+            session['is_admin'] = user.is_admin
+            flash('Login successful', 'success')
+            return redirect(url_for('dashboard_bp.dashboard_view'))
+        else:
+            flash('User not found, please register', 'danger')
+            return redirect(url_for('auth_bp.register'))
+    return render_template('/auth/login.html', form=form)
 
 
 @auth_bp.route('/logout')
-@login_required
 def logout():
-    """
-    Logs out the user and redirects to the home page.
-    """
-    logout_user()
     session.clear()
-    return redirect(url_for('index'))  # Ensure 'index' exists
+    flash('Logged out successfully', 'info')
+    return redirect(url_for('auth_bp.login'))
