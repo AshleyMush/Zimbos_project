@@ -5,6 +5,7 @@ from models.group import Group
 from models import db
 from forms import SearchForm
 from . import dashboard_bp
+from flask_login import current_user
 
 
 # You can also import helper functions from utils if needed
@@ -33,19 +34,20 @@ def dashboard_view():
 
 @dashboard_bp.route('/generate_token/<int:group_id>')
 def generate_token_route(group_id):
-    user_id = session.get('user_id')
-    if not user_id:
+    authenticated_user = current_user.is_authenticated
+    #user_id = session.get('user_id')
+    if not authenticated_user:
         flash('Please login first', 'warning')
         return redirect(url_for('auth_bp.login'))
 
     # Enforce a maximum of 3 active tokens per user
-    token_count = Token.query.filter_by(user_id=user_id, used=False).count()
+    token_count = Token.query.filter_by(user_id=authenticated_user, used=False).count()
     if token_count >= 3:
         flash('You have reached the maximum number of active tokens (3).', 'danger')
         return redirect(url_for('dashboard_bp.dashboard_view'))
 
     # Create a new token (the Token model auto-generates a UUID)
-    new_token = Token(user_id=user_id, group_id=group_id)
+    new_token = Token(user_id=authenticated_user, group_id=group_id)
     db.session.add(new_token)
     db.session.commit()
     flash('Token generated successfully! Use it to join the group.', 'success')

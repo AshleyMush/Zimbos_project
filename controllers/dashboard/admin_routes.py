@@ -11,7 +11,6 @@ from utils.decorators import roles_required
 
 @dashboard_bp.route('/admin-dashboard', methods=['GET', 'POST'])
 @roles_required('Admin')
-
 def admin_dashboard():
     form = AddGroupForm()
     groups = Group.query.all()
