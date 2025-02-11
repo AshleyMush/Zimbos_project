@@ -12,7 +12,7 @@
       <a class="navbar-brand" href="{{ url_for('dashboard_bp.dashboard_view') }}">Zimbabwe Groups</a>
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
-          {% if session.get('user_id') %}
+          {% if current_user.is_authenticated %}
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('auth_bp.logout') }}">Logout</a>
             </li>

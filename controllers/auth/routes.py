@@ -14,8 +14,12 @@ def register():
     user_count = User.query.count()
 
 
+    # Check if any users exist in the database.
+    user_count = User.query.count()
     if user_count == 0:
-        role = 'Admin'
+        role = 'Admin'  # First user becomes Admin
+    else:
+        role = 'User'
 
     if form.validate_on_submit():
         # Check if user already exists
@@ -33,8 +37,12 @@ def register():
         )
         db.session.add(new_user)
         db.session.commit()
-        flash('Registration successful, please login', 'success')
-        return redirect(url_for('auth_bp.login'))
+        flash('Registration successful', 'success')
+        if new_user.role == "Admin":
+            return redirect(url_for('dashboard_bp.admin_dashboard'))
+        else:
+            return redirect(url_for('dashboard_bp.user_dashboard'))
+
     return render_template('/auth/register.html', form=form)
 
 
@@ -47,42 +55,35 @@ def register():
 def login():
     form = LoginForm()
 
-
     if current_user.is_authenticated:
-        if current_user.role == "Admin":
-            return redirect(url_for('admin_bp.admin_dashboard'))
-
-        elif current_user.role == "Moderator":
-            pass
-        else:
-            return redirect(url_for('dashboard_bp.dashboard_view'))
-
-
-
+        print("User is already authenticated, redirecting...")
+        return redirect_user_based_on_role(current_user.role)
 
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             login_user(user)
-
             flash('Logged in successfully', 'success')
-            if user.role == "Admin":
-                return redirect(url_for('admin_bp.admin_dashboard'))
-
-            elif user.role == "Moderator":
-                pass
-            else:
-                return redirect(url_for('dashboard_bp.dashboard_view'))
+            return redirect_user_based_on_role(user.role)
         else:
             flash('User not found, please register', 'danger')
             return redirect(url_for('auth_bp.register'))
     return render_template('/auth/login.html', form=form)
 
-
 @auth_bp.route('/logout')
 def logout():
     session.clear()
-    flash('Logged out successfully', 'info')
     logout_user()
-
+    flash("You have been logged out.", "info")
     return redirect(url_for('auth_bp.login'))
+
+
+def redirect_user_based_on_role(user_role):
+    if user_role == "Admin":
+        return redirect(url_for('dashboard_bp.admin_dashboard'))
+    elif user_role == "Moderator":
+        return redirect(url_for('dashboard_bp.user_dashboard'))  # TODO: Ensure moderators are redirected somewhere
+    elif user_role == "User":
+        return redirect(url_for('dashboard_bp.user_dashboard'))
+    else:
+        return redirect(url_for('auth_bp.login'))  # Prevent infinite loops if role is unknown

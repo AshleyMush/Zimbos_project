@@ -13,7 +13,7 @@ from flask_login import current_user
 
 
 @dashboard_bp.route('/user-dashboard', methods=['GET', 'POST'])
-def dashboard_view():
+def user_dashboard():
     # Ensure the user is logged in
     user_id = session.get('user_id')
     if not user_id:
@@ -44,14 +44,14 @@ def generate_token_route(group_id):
     token_count = Token.query.filter_by(user_id=authenticated_user, used=False).count()
     if token_count >= 3:
         flash('You have reached the maximum number of active tokens (3).', 'danger')
-        return redirect(url_for('dashboard_bp.dashboard_view'))
+        return redirect(url_for('dashboard_bp.user_dashboard'))
 
     # Create a new token (the Token model auto-generates a UUID)
     new_token = Token(user_id=authenticated_user, group_id=group_id)
     db.session.add(new_token)
     db.session.commit()
     flash('Token generated successfully! Use it to join the group.', 'success')
-    return redirect(url_for('dashboard_bp.dashboard_view'))
+    return redirect(url_for('dashboard_bp.user_dashboard'))
 
 
 @dashboard_bp.route('/use_token/<token>')
@@ -64,7 +64,7 @@ def use_token(token):
     token_obj = Token.query.filter_by(token=token, user_id=user_id, used=False).first()
     if not token_obj:
         flash('Invalid or already used token.', 'danger')
-        return redirect(url_for('dashboard_bp.dashboard_view'))
+        return redirect(url_for('dashboard_bp.user_dashboard'))
 
     # Mark token as used so it cannot be reused
     token_obj.used = True
@@ -77,4 +77,4 @@ def use_token(token):
         return redirect(group.group_link)
     else:
         flash('Group not found', 'danger')
-        return redirect(url_for('dashboard_bp.dashboard_view'))
+        return redirect(url_for('dashboard_bp.user_dashboard'))
