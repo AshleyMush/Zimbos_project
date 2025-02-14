@@ -9,6 +9,10 @@ from models import db
 from models.user import User
 from controllers.auth import auth_bp
 from controllers.dashboard import dashboard_bp
+from flask_session import Session
+
+
+
 
 # Initialize Flask application
 app = Flask(__name__)

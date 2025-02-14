@@ -46,15 +46,12 @@ def register():
     return render_template('/auth/register.html', form=form)
 
 
-
-
-
-
-
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
+    print("Login route accessed")  # Debugging line
 
+    print(f"Checking authentication: {current_user.is_authenticated}")  # Debugging
     if current_user.is_authenticated:
         print("User is already authenticated, redirecting...")
         return redirect_user_based_on_role(current_user.role)
@@ -63,12 +60,15 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             login_user(user)
+            print(f"User logged in: {user.role}")  # Debugging
             flash('Logged in successfully', 'success')
             return redirect_user_based_on_role(user.role)
         else:
             flash('User not found, please register', 'danger')
             return redirect(url_for('auth_bp.register'))
+
     return render_template('/auth/login.html', form=form)
+
 
 @auth_bp.route('/logout')
 def logout():
@@ -79,11 +79,14 @@ def logout():
 
 
 def redirect_user_based_on_role(user_role):
+    print(f"Redirecting user with role: {user_role}")  # Debugging line
+
     if user_role == "Admin":
         return redirect(url_for('dashboard_bp.admin_dashboard'))
     elif user_role == "Moderator":
-        return redirect(url_for('dashboard_bp.user_dashboard'))  # TODO: Ensure moderators are redirected somewhere
+        return redirect(url_for('dashboard_bp.user_dashboard'))
     elif user_role == "User":
         return redirect(url_for('dashboard_bp.user_dashboard'))
     else:
+        print("Unknown role, redirecting to login")
         return redirect(url_for('auth_bp.login'))  # Prevent infinite loops if role is unknown
